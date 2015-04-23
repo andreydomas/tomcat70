@@ -302,6 +302,19 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
     public int getSSLVerifyDepth() { return SSLVerifyDepth; }
     public void setSSLVerifyDepth(int SSLVerifyDepth) { this.SSLVerifyDepth = SSLVerifyDepth; }
 
+    /**
+     * SSL session cache timeout
+     */
+    protected long SSLSessionCacheTimeout = 300;
+    public long getSSLSessionCacheTimeout() { return SSLSessionCacheTimeout; }
+    public void setSSLSessionCacheTimeout(long SSLSessionCacheTimeout) { this.SSLSessionCacheTimeout = SSLSessionCacheTimeout; }
+
+    /**
+     * SSL session tickets key.
+     */
+    protected String SSLSessionTicketKeyFile = null;
+    public String getSSLSessionTicketKeyFile() { return SSLSessionTicketKeyFile; }
+    public void setSSLSessionTicketKeyFile(String SSLSessionTicketKeyFile) { this.SSLSessionTicketKeyFile = SSLSessionTicketKeyFile; }
 
     /**
      * SSL allow insecure renegotiation for the the client that does not
@@ -602,6 +615,14 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
             SSLContext.setVerify(sslContext, value, SSLVerifyDepth);
             // For now, sendfile is not supported with SSL
             useSendfile = false;
+
+            //SSL session tickets key
+            if (SSLSessionTicketKeyFile != null) {
+                SSLContext.setSessionTicketKeyFile(sslContext, SSLSessionTicketKeyFile);
+            }
+
+            //SSL session cache timeout
+            SSLContext.setSessionCacheTimeout(sslContext, SSLSessionCacheTimeout);
         }
     }
 

@@ -281,4 +281,22 @@ public final class SSLContext {
      */
     public static native void setVerify(long ctx, int level, int depth);
 
+    /**
+     * Persistent encryption/decryption key for TLS session tickets.
+     * Optionally configures a secret key for encrypting and decrypting TLS session
+     * tickets, as defined in RFC 5077.
+     * @param ctx Server or Client context to use.
+     * @param file The file with TLS tickets key(must contain 48 bytes
+     *             of random data).
+     */
+    public static native void setSessionTicketKeyFile(long ctx, String file);
+
+    /**
+     * Number of seconds before an SSL session expires in the Session Cache.
+     * Applies also to RFC 5077 TLS session resumption.
+     * @param ctx Server or Client context to use.
+     * @param timeout Timeout, seconds.
+     */
+    public static native void setSessionCacheTimeout(long ctx, long timeout);
+
 }
