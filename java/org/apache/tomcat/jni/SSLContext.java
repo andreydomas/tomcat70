@@ -289,7 +289,7 @@ public final class SSLContext {
      * @param file The file with TLS tickets key(must contain 48 bytes
      *             of random data).
      */
-    public static native void setSessionTicketKeyFile(long ctx, String file);
+    public static native void setSessionTicketKey(long ctx, byte[] key);
 
     /**
      * Number of seconds before an SSL session expires in the Session Cache.

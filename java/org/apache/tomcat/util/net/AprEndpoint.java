@@ -17,6 +17,9 @@
 
 package org.apache.tomcat.util.net;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -618,7 +621,31 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
 
             //SSL session tickets key
             if (SSLSessionTicketKeyFile != null) {
-                SSLContext.setSessionTicketKeyFile(sslContext, SSLSessionTicketKeyFile);
+
+                FileInputStream fis = null;
+                byte[] key_buffer = new byte[48];
+                java.io.File key_file = new java.io.File(SSLSessionTicketKeyFile);
+
+                try {
+
+                    if (key_file.exists() && key_file.length() != key_buffer.length)
+                        throw new Exception("Length of SSL session key file must be 48 bytes");
+
+                    fis = new FileInputStream(SSLSessionTicketKeyFile);
+                    fis.read(key_buffer);
+
+                } finally {
+
+                    try {
+                        if (fis != null)
+                            fis.close();
+                    } catch (IOException e) {
+                        // Ignore
+                    }
+
+                }
+
+                SSLContext.setSessionTicketKey(sslContext, key_buffer);
             }
 
             //SSL session cache timeout
