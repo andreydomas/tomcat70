@@ -299,4 +299,21 @@ public final class SSLContext {
      */
     public static native void setSessionCacheTimeout(long ctx, long timeout);
 
+    /**
+     * Session resumption statistics methods.
+     * http://www.openssl.org/docs/ssl/SSL_CTX_sess_number.html
+     */
+    public static native long sessionAccept(long ctx);
+    public static native long sessionAcceptGood(long ctx);
+    public static native long sessionAcceptRenegotiate(long ctx);
+    public static native long sessionCacheFull(long ctx);
+    public static native long sessionCbHits(long ctx);
+    public static native long sessionConnect(long ctx);
+    public static native long sessionConnectGood(long ctx);
+    public static native long sessionConnectRenegotiate(long ctx);
+    public static native long sessionHits(long ctx);
+    public static native long sessionMisses(long ctx);
+    public static native long sessionNumber(long ctx);
+    public static native long sessionTimeouts(long ctx);
+
 }
