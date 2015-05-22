@@ -2546,6 +2546,7 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
     public long getSSLContextSessionConnectGood() { return sslContext != 0 ? SSLContext.sessionConnectGood(sslContext) : 0; }
     public long getSSLContextSessionConnectRenegotiate() { return sslContext != 0 ? SSLContext.sessionConnectRenegotiate(sslContext) : 0; }
     public long getSSLContextSessionAccept() { return sslContext != 0 ? SSLContext.sessionAccept(sslContext) : 0; }
+    public long getSSLContextSessionAcceptGood() { return sslContext != 0 ? SSLContext.sessionAcceptGood(sslContext) : 0; }
     public long getSSLContextSessionAcceptRenegotiate() { return sslContext != 0 ? SSLContext.sessionAcceptRenegotiate(sslContext) : 0; }
     public long getSSLContextSessionCacheFull() { return sslContext != 0 ? SSLContext.sessionCacheFull(sslContext) : 0; }
     public long getSSLContextSessionCbHits() { return sslContext != 0 ? SSLContext.sessionCbHits(sslContext) : 0; }
