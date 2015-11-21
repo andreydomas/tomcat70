@@ -300,6 +300,14 @@ public final class SSLContext {
     public static native void setSessionCacheTimeout(long ctx, long timeout);
 
     /**
+     * Number of seconds before an SSL session expires in the Session Cache.
+     * Applies also to RFC 5077 TLS session resumption.
+     * @param ctx Server or Client context to use.
+     * @param timeout Timeout, seconds.
+     */
+    public static native void setDHParameters(long ctx, String file);
+
+    /**
      * Session resumption statistics methods.
      * http://www.openssl.org/docs/ssl/SSL_CTX_sess_number.html
      */

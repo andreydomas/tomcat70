@@ -323,6 +323,13 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
     public void setSSLSessionTicketKeyFile(String SSLSessionTicketKeyFile) { this.SSLSessionTicketKeyFile = SSLSessionTicketKeyFile; }
 
     /**
+     * SSL DH parameters.
+     */
+    protected String SSLDHParametersFile = null;
+    public String getSSLDHParametersFile() { return SSLDHParametersFile; }
+    public void setSSLDHParametersFile(String SSLDHParametersFile) { this.SSLDHParametersFile = SSLDHParametersFile; }
+
+    /**
      * SSL allow insecure renegotiation for the the client that does not
      * support the secure renegotiation.
      */
@@ -634,6 +641,9 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
 
             //SSL session cache timeout
             SSLContext.setSessionCacheTimeout(sslContext, SSLSessionCacheTimeout);
+
+            // SSL DH parameters
+            SSLContext.setDHParameters(sslContext, SSLDHParametersFile);
         }
     }
 
