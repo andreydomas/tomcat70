@@ -31,6 +31,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -622,30 +625,11 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
             //SSL session tickets key
             if (SSLSessionTicketKeyFile != null) {
 
-                FileInputStream fis = null;
-                byte[] key_buffer = new byte[48];
-                java.io.File key_file = new java.io.File(SSLSessionTicketKeyFile);
+                final ScheduledExecutorService scheduler =
+                           Executors.newScheduledThreadPool(1);
 
-                try {
-
-                    if (key_file.exists() && key_file.length() != key_buffer.length)
-                        throw new Exception("Length of SSL session key file must be 48 bytes");
-
-                    fis = new FileInputStream(SSLSessionTicketKeyFile);
-                    fis.read(key_buffer);
-
-                } finally {
-
-                    try {
-                        if (fis != null)
-                            fis.close();
-                    } catch (IOException e) {
-                        // Ignore
-                    }
-
-                }
-
-                SSLContext.setSessionTicketKey(sslContext, key_buffer);
+                final TicketKeyRotator rotator = new TicketKeyRotator(sslContext);
+                scheduler.scheduleAtFixedRate(rotator, 0L, 10L, TimeUnit.SECONDS);
             }
 
             //SSL session cache timeout
@@ -2553,4 +2537,79 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
     public long getSSLContextSessionHits() { return sslContext != 0 ? SSLContext.sessionHits(sslContext) : 0; }
     public long getSSLContextSessionMisses() { return sslContext != 0 ? SSLContext.sessionMisses(sslContext) : 0; }
     public long getSSLContextSessionTimeouts() { return sslContext != 0 ? SSLContext.sessionTimeouts(sslContext) : 0; }
+
+   // --------------------------------------------- TicketKeyRotator Inner Class
+
+   protected class TicketKeyRotator implements Runnable {
+
+       private final long sslCtx;
+       private ArrayList<java.io.File> key_files = new ArrayList<java.io.File>();
+       private java.io.File last_used_key_file = null;
+
+       public TicketKeyRotator(long sslCtx) {
+           this.sslCtx = sslCtx;
+           for (String fname: SSLSessionTicketKeyFile.split(":"))
+               key_files.add(new java.io.File(fname));
+       }
+
+       @Override
+       public void run() {
+           java.io.File last_modified_key_file = null;
+
+           // choose last modified key file
+           for (java.io.File key_file: key_files) {
+               if (key_file.exists()
+                    && ( last_modified_key_file == null
+                        || key_file.lastModified() > last_modified_key_file.lastModified()))
+                   last_modified_key_file = key_file;
+           }
+
+           // if there is no the file or we've loaded it previously
+           if (last_modified_key_file == null
+                 || last_used_key_file == last_modified_key_file)
+               return;
+
+           try {
+               loadKey(last_modified_key_file);
+               last_used_key_file = last_modified_key_file;
+           } catch (Exception e) {
+               log.error(e);
+               // remove bad key file to prevent log littering
+               key_files.remove(last_modified_key_file);
+           }
+       }
+
+       private void loadKey(java.io.File fkey) throws Exception {
+           FileInputStream fis = null;
+           byte[] key_buffer = new byte[48];
+
+           try {
+
+               if (fkey.length() != key_buffer.length)
+                   throw new Exception(
+                           String.format(
+                               "Length of SSL session key file must be %d bytes, but length of %s is %d",
+                               key_buffer.length, fkey.getPath(), fkey.length()));
+
+               fis = new FileInputStream(fkey.getPath());
+               fis.read(key_buffer);
+
+           } finally {
+
+              try {
+                  if (fis != null)
+                      fis.close();
+                  } catch (IOException e) {
+                    // Ignore
+                  }
+              }
+
+              log.info(String.format(
+                           "TLS session ticket key rotation, load key from %s",
+                           fkey.getPath()));
+
+              SSLContext.setSessionTicketKey(sslContext, key_buffer);
+       }
+
+   }
 }
