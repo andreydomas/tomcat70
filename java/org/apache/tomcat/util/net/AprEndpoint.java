@@ -2565,14 +2565,27 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
        @Override
        public void run() {
            java.io.File last_modified_key_file = null;
+           java.io.File prev_modified_key_file = null;
 
            // choose last modified key file
            for (java.io.File key_file: key_files) {
                if (key_file.exists()
-                    && ( last_modified_key_file == null
+                    && (last_modified_key_file == null
                         || key_file.lastModified() > last_modified_key_file.lastModified()))
                    last_modified_key_file = key_file;
            }
+
+           // choose previously modified file
+           // for case if server is starting and it configured
+           //   with more then one key
+           if (last_used_key_file == null && key_files.size() > 1)
+               for (java.io.File key_file: key_files) {
+                   if (key_file != last_modified_key_file && key_file.exists()
+                         && (prev_modified_key_file == null
+                             || key_file.lastModified() > prev_modified_key_file.lastModified()))
+                       prev_modified_key_file = key_file;
+
+               }
 
            // if there is no the file or we've loaded it previously
            if (last_modified_key_file == null
@@ -2580,8 +2593,14 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
                return;
 
            try {
+
+               if (prev_modified_key_file != null)
+                   loadKey(prev_modified_key_file);
+
                loadKey(last_modified_key_file);
+
                last_used_key_file = last_modified_key_file;
+
            } catch (Exception e) {
                log.error(e);
                // remove bad key file to prevent log littering
