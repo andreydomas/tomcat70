@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -368,6 +369,11 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
     public boolean getSSLDisableCompression() { return SSLDisableCompression; }
 
     /**
+     * Session tickets keys and OCSP rotation scheduler.
+     **/
+    private ScheduledExecutorService rotation_scheduler = null;
+
+    /**
      * Port in use.
      */
     @Override
@@ -636,18 +642,25 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
             // For now, sendfile is not supported with SSL
             useSendfile = false;
 
-            final ScheduledExecutorService scheduler =
-                           Executors.newScheduledThreadPool(1);
+            rotation_scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r);
+                    t.setDaemon(true);
+                    return t;
+                }
+                });
 
             //SSL session tickets key
             if (SSLSessionTicketKeyFile != null) {
                 final TicketKeyRotator tickets_rotator = new TicketKeyRotator(sslContext);
-                scheduler.scheduleAtFixedRate(tickets_rotator, 0L, 10L, TimeUnit.SECONDS);
+                tickets_rotator.run();  // synchronous call
+                rotation_scheduler.scheduleAtFixedRate(tickets_rotator, 10L, 10L, TimeUnit.SECONDS);
             }
 
             if (SSLOCSPStaplingFile != null) {
                 final OCSPStaplingRotator ocsp_rotator = new OCSPStaplingRotator(sslContext);
-                scheduler.scheduleAtFixedRate(ocsp_rotator, 0L, 10L, TimeUnit.SECONDS);
+                ocsp_rotator.run();  // synchronous call
+                rotation_scheduler.scheduleAtFixedRate(ocsp_rotator, 10L, 10L, TimeUnit.SECONDS);
             }
 
             //SSL session cache timeout
@@ -794,6 +807,10 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
         if (rootPool != 0) {
             Pool.destroy(rootPool);
             rootPool = 0;
+        }
+
+        if(rotation_scheduler != null && !rotation_scheduler.isShutdown()) {
+            rotation_scheduler.shutdown();
         }
 
         handler.recycle();
