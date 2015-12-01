@@ -308,6 +308,15 @@ public final class SSLContext {
     public static native void setDHParameters(long ctx, String file);
 
     /**
+     * File with OCSP response.
+     * Optionally configures a OCSP response to staple it.
+     * @param ctx Server or Client context to use.
+     * @param file The file with OCSP response.
+     */
+    public static native void setOCSPStaplingFile(long ctx, String file)
+        throws Exception;
+
+    /**
      * Session resumption statistics methods.
      * http://www.openssl.org/docs/ssl/SSL_CTX_sess_number.html
      */

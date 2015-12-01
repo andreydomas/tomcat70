@@ -330,6 +330,13 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
     public void setSSLDHParametersFile(String SSLDHParametersFile) { this.SSLDHParametersFile = SSLDHParametersFile; }
 
     /**
+     * SSL DH parameters.
+     */
+    protected String SSLOCSPStaplingFile = null;
+    public String getSSLOCSPStaplingFile() { return SSLOCSPStaplingFile; }
+    public void setSSLOCSPStaplingFile(String SSLOCSPStaplingFile) { this.SSLOCSPStaplingFile = SSLOCSPStaplingFile; }
+
+    /**
      * SSL allow insecure renegotiation for the the client that does not
      * support the secure renegotiation.
      */
@@ -629,14 +636,18 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
             // For now, sendfile is not supported with SSL
             useSendfile = false;
 
-            //SSL session tickets key
-            if (SSLSessionTicketKeyFile != null) {
-
-                final ScheduledExecutorService scheduler =
+            final ScheduledExecutorService scheduler =
                            Executors.newScheduledThreadPool(1);
 
-                final TicketKeyRotator rotator = new TicketKeyRotator(sslContext);
-                scheduler.scheduleAtFixedRate(rotator, 0L, 10L, TimeUnit.SECONDS);
+            //SSL session tickets key
+            if (SSLSessionTicketKeyFile != null) {
+                final TicketKeyRotator tickets_rotator = new TicketKeyRotator(sslContext);
+                scheduler.scheduleAtFixedRate(tickets_rotator, 0L, 10L, TimeUnit.SECONDS);
+            }
+
+            if (SSLOCSPStaplingFile != null) {
+                final OCSPStaplingRotator ocsp_rotator = new OCSPStaplingRotator(sslContext);
+                scheduler.scheduleAtFixedRate(ocsp_rotator, 0L, 10L, TimeUnit.SECONDS);
             }
 
             //SSL session cache timeout
@@ -2641,4 +2652,36 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
        }
 
    }
+
+   // ------------------------------------------ OCSPStaplingRotator Inner Class
+
+   protected class OCSPStaplingRotator implements Runnable {
+
+       private final long sslCtx;
+       private final java.io.File file;
+       private long lastSeen = 0;
+
+       public OCSPStaplingRotator(long sslCtx) {
+           this.sslCtx = sslCtx;
+           this.file = new java.io.File(SSLOCSPStaplingFile);
+       }
+
+       @Override
+       public void run() {
+            if(!file.exists() || lastSeen >= file.lastModified())
+                return;
+
+            log.info(String.format("OCSP response rotation, load key from %s",
+                        file.getPath()));
+
+            lastSeen = file.lastModified();
+
+            try {
+                SSLContext.setOCSPStaplingFile(sslCtx, file.getPath());
+            } catch (Exception e) {
+                log.error("OCSP response rotation, error loading OCSP response", e);
+            }
+       }
+   }
+
 }
