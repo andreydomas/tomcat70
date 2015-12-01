@@ -654,7 +654,9 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
             SSLContext.setSessionCacheTimeout(sslContext, SSLSessionCacheTimeout);
 
             // SSL DH parameters
-            SSLContext.setDHParameters(sslContext, SSLDHParametersFile);
+            if (SSLDHParametersFile != null) {
+                SSLContext.setDHParameters(sslContext, SSLDHParametersFile);
+            }
         }
     }
 
