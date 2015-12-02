@@ -2648,9 +2648,9 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
                    throw new Exception(
                            String.format(
                                "Length of SSL session key file must be %d bytes, but length of %s is %d",
-                               key_buffer.length, fkey.getPath(), fkey.length()));
+                               key_buffer.length, fkey.getAbsolutePath(), fkey.length()));
 
-               fis = new FileInputStream(fkey.getPath());
+               fis = new FileInputStream(fkey.getAbsolutePath());
                fis.read(key_buffer);
 
            } finally {
@@ -2665,7 +2665,7 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
 
               log.info(String.format(
                            "TLS session ticket key rotation, load key from %s",
-                           fkey.getPath()));
+                           fkey.getAbsolutePath()));
 
               SSLContext.setSessionTicketKey(sslContext, key_buffer);
        }
@@ -2691,12 +2691,12 @@ public class AprEndpoint extends AbstractEndpoint<Long> {
                 return;
 
             log.info(String.format("OCSP response rotation, load key from %s",
-                        file.getPath()));
+                        file.getAbsolutePath()));
 
             lastSeen = file.lastModified();
 
             try {
-                SSLContext.setOCSPStaplingFile(sslCtx, file.getPath());
+                SSLContext.setOCSPStaplingFile(sslCtx, file.getAbsolutePath());
             } catch (Exception e) {
                 log.error("OCSP response rotation, error loading OCSP response", e);
             }
